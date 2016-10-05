@@ -7,6 +7,7 @@ accumulate sets.
 
 kind rs_ty type.
 kind rs_lt type.
+kind rs_trait type.
 
 kind obligation type.
 
@@ -36,6 +37,8 @@ invert_relation sub sup.
 invert_relation sup sub.
 invert_relation eq eq.
 
+% `relate_ty`: Relate two types by making them equal, subtype,
+% supertype, etc as needed.
 type relate_ty relation -> rs_ty -> rs_ty -> (list obligation) -> o.
 relate_ty R i32 i32 nil.
 relate_ty R str str nil.
