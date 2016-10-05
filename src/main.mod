@@ -51,7 +51,7 @@ relate_ty R (ref La Ta) (ref Lb Tb) O2 :-
         !,
         relate_ty R Ta Tb O1,
         set_add (relate_lt_oblig R La Lb) O1 O2.
-relate_ty R (ref_mut La Ta) (ref_mut Lb Tb) O :-
+relate_ty R (ref_mut La Ta) (ref_mut Lb Tb) O2 :-
         !,
         relate_ty eq Ta Tb O1,
         set_add (relate_lt_oblig R La Lb) O1 O2.
