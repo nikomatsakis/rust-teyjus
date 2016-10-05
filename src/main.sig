@@ -16,7 +16,15 @@ type forall (rs_lt -> rs_ty) -> rs_ty. /* for<'a> T */
 
 type lt string -> rs_lt.
 
-type lt_outlives rs_lt -> rs_lt -> obligation.
+kind relation type.
+type sub relation.
+type sup relation.
+type eq relation.
+
+type relate_lt_oblig relation -> rs_lt -> rs_lt -> obligation.
+
+type invert_relation relation -> relation -> o.
+exportdef invert_relation.
 
 type subtype rs_ty -> rs_ty -> (list obligation) -> o.
 exportdef subtype.
