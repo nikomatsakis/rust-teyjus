@@ -21,6 +21,9 @@ type forall (rs_lt -> rs_ty) -> rs_ty. /* for<'a> T */
 
 type lt string -> rs_lt.
 
+% Relate the regions as would be required to make two references have
+% the appropriate type. That is, `(relate_lt_oblig sub A B)` means `A:
+% B` in Rust terms, or `B <= A` in terms of the region lattice.
 type relate_lt_oblig relation -> rs_lt -> rs_lt -> obligation.
 
 kind relation type.
