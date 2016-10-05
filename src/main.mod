@@ -37,6 +37,8 @@ invert_relation sub sup.
 invert_relation sup sub.
 invert_relation eq eq.
 
+% Relate types %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % `relate_ty`: Relate two types by making them equal, subtype,
 % supertype, etc as needed.
 type relate_ty relation -> rs_ty -> rs_ty -> (list obligation) -> o.
@@ -47,7 +49,9 @@ relate_ty R (array T1) (array T2) O :-
 relate_ty R (ref La Ta) (ref Lb Tb) O2 :-
         relate_ty R Ta Tb O1,
         set_add (relate_lt_oblig R La Lb) O1 O2.
-relate_ty R (ref_mut La T) (ref_mut Lb T) [relate_lt_oblig R La Lb].
+relate_ty R (ref_mut La Ta) (ref_mut Lb Tb) O :-
+        relate_ty eq Ta Tb O1,
+        set_add (relate_lt_oblig R La Lb) O1 O2.
 relate_ty R (fn Aa Ra) (fn Ab Rb) O3 :-
         invert_relation R Rcontra,
         relate_ty Rcontra Aa Ab O1,
@@ -67,3 +71,6 @@ subtype A B O :- relate_ty sub A B O.
 
 type eqtype rs_ty -> rs_ty -> (list obligation) -> o.
 eqtype A B O :- relate_ty sub A B O.
+
+% Trait system %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
