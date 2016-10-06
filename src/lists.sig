@@ -12,4 +12,6 @@ exportdef  join     (list A) -> (list A) -> (list A) -> o.
 exportdef  assoc    A -> B -> (list (pairty A B)) -> o.
 exportdef  domain   (list (pairty A B)) -> (list A) -> o.
 exportdef  range   (list (pairty A B)) -> (list B) -> o.
+exportdef  map      (A -> B -> o) -> (list A) -> (list B) -> o.
+
 

@@ -18,107 +18,119 @@ type fn t_ty -> t_ty -> t_ty. /* fn(A) -> T */
 type tup2 t_ty -> t_ty -> t_ty. /* (T, U) */
 type forall (t_lt -> t_ty) -> t_ty. /* for<'a> T */
 
-kind t_relation type.
-type sub t_relation.
-type sup t_relation.
-type eq t_relation.
+kind t_variance type.
+type covariant t_variance.
+type contravariant t_variance.
+type invariant t_variance.
 
-type invert_relation t_relation -> t_relation -> o.
-invert_relation sub sup.
-invert_relation sup sub.
-invert_relation eq eq.
+kind t_arg type.
+type arg_ty t_ty -> t_arg.
+type arg_lt t_lt -> t_arg.
 
-kind rs_arg type.
-type arg_ty t_ty -> rs_arg.
-type arg_lt t_lt -> rs_arg.
+type apply_variance t_variance -> t_variance -> t_variance -> o.
+apply_variance covariant V V :- !.
+apply_variance contravariant V S :- !, invert_variance V S.
+apply_variance invariant V invariant :- !.
+
+type invert_variance t_variance -> t_variance -> o.
+invert_variance covariant contravariant.
+invert_variance contravariant covariant.
+invert_variance invariant invariant.
 
 % Obligations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 kind t_obligation type.
 
 % Relate the regions as would be required to make two references have
-% the appropriate type. That is, `(relate_lt_oblig sub A B)` means `A:
+% the appropriate type. That is, `(relate_lt_oblig covariant A B)` means `A:
 % B` in Rust terms, or `B <= A` in terms of the region lattice.
-type relate_lt_oblig t_relation -> t_lt -> t_lt -> t_obligation.
+type relate_lt_oblig t_variance -> t_lt -> t_lt -> t_obligation.
 
 % Relate kinds %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-type relate_arg t_relation -> rs_arg -> rs_arg -> (list t_obligation) -> o.
-relate_arg R (arg_ty A) (arg_ty B) O :- !, relate_ty R A B O.
-relate_arg R (arg_lt A) (arg_lt B) O :- !, relate_ty R (ref A i32) (ref B i32) O.
+type relate_arg t_variance -> t_arg -> t_arg -> (list t_obligation) -> o.
+relate_arg V (arg_ty A) (arg_ty B) O :- !, relate_ty V A B O.
+relate_arg V (arg_lt A) (arg_lt B) O :- !, relate_ty V (ref A i32) (ref B i32) O.
 
-type relate_args (list t_relation) -> (list rs_arg) -> (list rs_arg) -> (list t_obligation) -> o.
+type relate_args (list t_variance) -> (list t_arg) -> (list t_arg) -> (list t_obligation) -> o.
 relate_args nil nil nil nil :- !.
-relate_args (R :: Rs) (A :: As) (B :: Bs) O3 :-
+relate_args (V :: Vs) (A :: As) (B :: Bs) O3 :-
     !,
-    relate_arg R A B O1,
-    relate_args Rs As Bs O2,
+    relate_arg V A B O1,
+    relate_args Vs As Bs O2,
     join O1 O2 O3.
 
 % Relate types %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % `relate_ty`: Relate two types by making them equal, subtype,
 % supertype, etc as needed.
-type relate_ty t_relation -> t_ty -> t_ty -> (list t_obligation) -> o.
-relate_ty R i32 i32 nil :- !.
-relate_ty R str str nil :- !.
-relate_ty R (array T1) (array T2) O :-
+type relate_ty t_variance -> t_ty -> t_ty -> (list t_obligation) -> o.
+relate_ty V i32 i32 nil :- !.
+relate_ty V str str nil :- !.
+relate_ty V (array T1) (array T2) O :-
     !,
-    relate_ty R T1 T2 O.
-relate_ty R (ref La Ta) (ref Lb Tb) O2 :-
+    relate_ty V T1 T2 O.
+relate_ty V (ref La Ta) (ref Lb Tb) O2 :-
     !,
-    relate_ty R Ta Tb O1,
-    set_add (relate_lt_oblig R La Lb) O1 O2.
-relate_ty R (ref_mut La Ta) (ref_mut Lb Tb) O2 :-
+    relate_ty V Ta Tb O1,
+    set_add (relate_lt_oblig V La Lb) O1 O2.
+relate_ty V (ref_mut La Ta) (ref_mut Lb Tb) O2 :-
     !,
-    relate_ty eq Ta Tb O1,
-    set_add (relate_lt_oblig R La Lb) O1 O2.
-relate_ty R (fn Aa Ra) (fn Ab Rb) O3 :-
+    relate_ty invariant Ta Tb O1,
+    set_add (relate_lt_oblig V La Lb) O1 O2.
+relate_ty V (fn Aa Va) (fn Ab Vb) O3 :-
     !,
-    invert_relation R Rcontra,
-    relate_ty Rcontra Aa Ab O1,
-    relate_ty R Ra Rb O2,
+    invert_variance V Vcontra,
+    relate_ty Vcontra Aa Ab O1,
+    relate_ty V Va Vb O2,
     join O1 O2 O3.
-relate_ty R (tup2 Aa Ra) (tup2 Ab Rb) O3 :-
+relate_ty V (tup2 Aa Va) (tup2 Ab Vb) O3 :-
     !,
-    relate_ty R Aa Ab O1,
-    relate_ty R Ra Rb O2,
+    relate_ty V Aa Ab O1,
+    relate_ty V Va Vb O2,
     join O1 O2 O3.
-relate_ty R (forall A) B O :-
+relate_ty V (forall A) B O :-
     !,
-    sigma L \ relate_ty R (A L) B O.
-relate_ty R A (forall B) O :-
+    sigma L \ relate_ty V (A L) B O.
+relate_ty V A (forall B) O :-
     !,
-    pi L \ relate_ty R A (B L) O.
+    pi L \ relate_ty V A (B L) O.
 
 type subtype t_ty -> t_ty -> (list t_obligation) -> o.
-subtype A B O :- relate_ty sub A B O.
+subtype A B O :- relate_ty covariant A B O.
 
 type eqtype t_ty -> t_ty -> (list t_obligation) -> o.
-eqtype A B O :- relate_ty sub A B O.
+eqtype A B O :- relate_ty invariant A B O.
 
 % Example type %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%type Vec t_ty -> t_ty.
-%
-%% Effectively a variance declaration:
-%relate_ty R (Vec A) (Vec B) O :-
-%    !,
-%    relate_ty R A B O.
-%
-%kind rs_struct type.
-%kind rs_struct_name type.
-%
-%type rs_struct_name string -> rs_struct_name.
-%
-%type rs_struct string -> (list rs_arg) -> t_ty.
-%
-%type rs_variance 
-%relate_ty R (rs_struct N nil) (rs_struct N nil) nil :-
-%    !.
-%
-%relate_ty R (rs_struct N (A :: As)) (rs_struct N (B :: Bs)) O3 :-
-%    !,
-%    relate_arg R A B O1,
-%    relate_ty R A B O1,
+% One way would be to have each type have a corresponding series of
+% declarations, like this.
 
+type vec t_ty -> t_ty.
+
+% Effectively a variance declaration:
+relate_ty V (vec A) (vec B) O :-
+    !,
+    relate_ty V A B O.
+
+% Another way would be more of a metadata approach.
+
+kind t_struct type.
+
+kind t_struct_name type.
+
+type struct_name string -> t_struct_name.
+
+type struct t_struct_name -> (list t_arg) -> t_ty.
+
+type variance t_struct_name -> (list t_variance) -> o.
+
+relate_ty V0 (struct N As) (struct N Bs) O :-
+    !,
+    variance N V1s,
+    map (apply_variance V0) V1s V2s,
+    relate_args V2s As Bs O.
+
+variance (struct_name "Vec") [covariant].
+variance (struct_name "Cell") [invariant].

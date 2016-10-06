@@ -13,7 +13,8 @@ type  append   (list A) -> (list A) -> (list A) -> o.
 type  join     (list A) -> (list A) -> (list A) -> o.
 type  assoc    A -> B -> (list (pairty A B)) -> o.
 type  domain   (list (pairty A B)) -> (list A) -> o.
-type  range   (list (pairty A B)) -> (list B) -> o.
+type  range    (list (pairty A B)) -> (list B) -> o.
+type  map      (A -> B -> o) -> (list A) -> (list B) -> o.
 
 id nil nil.
 id (X::L) (X::K) :- id L K.
@@ -39,3 +40,7 @@ domain (pair X Y::Alist) (X::L) :- domain Alist L.
 
 range nil nil.
 range (pair X Y::Alist) (Y::L) :- range Alist L.
+
+map F nil nil.
+map F (A :: As) (B :: Bs) :- F A B, (map F As Bs).
+
