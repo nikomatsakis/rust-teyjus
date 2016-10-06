@@ -1,38 +1,47 @@
 sig main.
 
-kind rs_ty type.
-kind rs_lt type.
-kind rs_trait type.
+% Base definitions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-kind obligation type.
+kind t_lt type.
+type lt string -> t_lt.
 
-type i32 rs_ty. /* i32 */
-type str rs_ty. /* str */
-type array rs_ty -> rs_ty. /* [T] */
-type ref rs_lt -> rs_ty -> rs_ty. /* &'a T */
-type ref_mut rs_lt -> rs_ty -> rs_ty. /* &'a mut T */
-type fn rs_ty -> rs_ty -> rs_ty. /* fn(A) -> T */
-type tup2 rs_ty -> rs_ty -> rs_ty. /* (T, U) */
-type forall (rs_lt -> rs_ty) -> rs_ty. /* for<'a> T */
+kind t_ty type.
+type i32 t_ty. /* i32 */
+type str t_ty. /* str */
+type array t_ty -> t_ty. /* [T] */
+type ref t_lt -> t_ty -> t_ty. /* &'a T */
+type ref_mut t_lt -> t_ty -> t_ty. /* &'a mut T */
+type fn t_ty -> t_ty -> t_ty. /* fn(A) -> T */
+type tup2 t_ty -> t_ty -> t_ty. /* (T, U) */
+type forall (t_lt -> t_ty) -> t_ty. /* for<'a> T */
 
-type lt string -> rs_lt.
+kind t_relation type.
+type sub t_relation.
+type sup t_relation.
+type eq t_relation.
 
-type relate_lt_oblig relation -> rs_lt -> rs_lt -> obligation.
-
-kind relation type.
-type sub relation.
-type sup relation.
-type eq relation.
-
-type invert_relation relation -> relation -> o.
+type invert_relation t_relation -> t_relation -> o.
 exportdef invert_relation.
 
-type relate_ty relation -> rs_ty -> rs_ty -> (list obligation) -> o.
+kind rs_arg type.
+type arg_ty t_ty -> rs_arg.
+type arg_lt t_lt -> rs_arg.
+
+kind t_obligation type.
+
+type relate_lt_oblig t_relation -> t_lt -> t_lt -> t_obligation.
+
+type relate_arg t_relation -> rs_arg -> rs_arg -> (list t_obligation) -> o.
+exportdef relate_arg.
+
+type relate_args (list t_relation) -> (list rs_arg) -> (list rs_arg) -> (list t_obligation) -> o.
+exportdef relate_args.
+
+type relate_ty t_relation -> t_ty -> t_ty -> (list t_obligation) -> o.
 exportdef relate_ty.
 
-type subtype rs_ty -> rs_ty -> (list obligation) -> o.
+type subtype t_ty -> t_ty -> (list t_obligation) -> o.
 exportdef subtype.
 
-type eqtype rs_ty -> rs_ty -> (list obligation) -> o.
+type eqtype t_ty -> t_ty -> (list t_obligation) -> o.
 exportdef eqtype.
-
