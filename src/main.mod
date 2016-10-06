@@ -102,19 +102,25 @@ subtype A B O :- relate_ty covariant A B O.
 type eqtype t_ty -> t_ty -> (list t_obligation) -> o.
 eqtype A B O :- relate_ty invariant A B O.
 
-% Example type %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Structs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % One way would be to have each type have a corresponding series of
 % declarations, like this.
-
-type vec t_ty -> t_ty.
-
-% Effectively a variance declaration:
-relate_ty V (vec A) (vec B) O :-
-    !,
-    relate_ty V A B O.
-
-% Another way would be more of a metadata approach.
+%
+% ```
+% type vec t_ty -> t_ty.
+% ```
+%
+% and then a "variance declaration" would look like this:
+%
+% ```
+% relate_ty V (vec A) (vec B) O :-
+%     !,
+%     relate_ty V A B O.
+% ```
+%
+% but for now I will take more of a metadata approach. Not sure if
+% this is correct really but at the moment I don't see a downside.
 
 kind t_struct type.
 
@@ -134,3 +140,29 @@ relate_ty V0 (struct N As) (struct N Bs) O :-
 
 variance (struct_name "Vec") [covariant].
 variance (struct_name "Cell") [invariant].
+
+% Example interaction:
+%
+% [main] ?- (subtype (struct (struct_name "Cell") [arg_ty (ref (lt "a1") i32)]) (struct (struct_name "Cell") [arg_ty (ref (lt "b1") i32)]) O).
+% 
+% The answer substitution:
+% O = relate_lt_oblig invariant (lt "a1") (lt "b1") :: nil
+% 
+% More solutions (y/n)? y
+% 
+% no (more) solutions
+% 
+% [main] ?- (subtype (struct (struct_name "Vec") [arg_ty (ref (lt "a1") i32)]) (struct (struct_name "Vec") [arg_ty (ref (lt "b1") i32)]) O).
+% 
+% The answer substitution:
+% O = relate_lt_oblig covariant (lt "a1") (lt "b1") :: nil
+% 
+% More solutions (y/n)? y
+% 
+% no (more) solutions
+% 
+% [main] ?- (relate_ty invariant (struct (struct_name "Vec") [arg_ty (ref (lt "a1") i32)]) (struct (struct_name "Vec") [arg_ty (ref (lt "b1") i32)]) O).
+% 
+% The answer substitution:
+% O = relate_lt_oblig invariant (lt "a1") (lt "b1") :: nil
+
