@@ -46,13 +46,27 @@ exportdef subtype.
 type eqtype t_ty -> t_ty -> (list t_obligation) -> o.
 exportdef eqtype.
 
+% Structs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 kind t_struct type.
 
-kind t_struct_name type.
+kind t_ident type.
 
-type struct_name string -> t_struct_name.
+type ident string -> t_ident.
 
-type struct t_struct_name -> (list t_arg) -> t_ty.
+type struct t_ident -> (list t_arg) -> t_ty.
 
-exportdef variance t_struct_name -> (list t_variance) -> o.
+exportdef variance t_ident -> (list t_variance) -> o.
 
+% Traits %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+kind t_trait_ref type.
+type trait_ref t_ident -> (list t_arg) -> t_trait_ref.
+
+exportdef trait_ref_matches t_trait_ref -> t_trait_ref -> (list t_obligation) -> o.
+
+kind t_impl type.
+type impl t_trait_ref -> (list t_obligation) -> t_impl.
+type impl_forall (t_arg -> t_impl) -> t_impl.
+
+exportdef impl_matches t_trait_ref -> t_impl -> O -> o.

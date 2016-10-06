@@ -1,3 +1,11 @@
+% PROBLEMS:
+%
+% I am misusing ! quite a bit below. My intention was to indicate that
+% at most one of those rules applies. But in fact it will cut off
+% expansions. e.g., `subtype T1 T2 O` yields `T1 = i32` only.  This is
+% of course an interesting point because it is precisely the place
+% where Prolog's unification meet's Rust's semantics and has trouble.
+
 module main.
 
 accumulate lists.
@@ -58,6 +66,14 @@ relate_args (V :: Vs) (A :: As) (B :: Bs) O3 :-
     !,
     relate_arg V A B O1,
     relate_args Vs As Bs O2,
+    join O1 O2 O3.
+
+type eq_args (list t_arg) -> (list t_arg) -> (list t_obligation) -> o.
+eq_args nil nil nil :- !.
+eq_args (A :: As) (B :: Bs) O3 :-
+    !,
+    relate_arg invariant A B O1,
+    eq_args As Bs O2,
     join O1 O2 O3.
 
 % Relate types %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,13 +140,13 @@ eqtype A B O :- relate_ty invariant A B O.
 
 kind t_struct type.
 
-kind t_struct_name type.
+kind t_ident type.
 
-type struct_name string -> t_struct_name.
+type ident string -> t_ident.
 
-type struct t_struct_name -> (list t_arg) -> t_ty.
+type struct t_ident -> (list t_arg) -> t_ty.
 
-type variance t_struct_name -> (list t_variance) -> o.
+type variance t_ident -> (list t_variance) -> o.
 
 relate_ty V0 (struct N As) (struct N Bs) O :-
     !,
@@ -138,12 +154,12 @@ relate_ty V0 (struct N As) (struct N Bs) O :-
     map (apply_variance V0) V1s V2s,
     relate_args V2s As Bs O.
 
-variance (struct_name "Vec") [covariant].
-variance (struct_name "Cell") [invariant].
+variance (ident "Vec") [covariant].
+variance (ident "Cell") [invariant].
 
 % Example interaction:
 %
-% [main] ?- (subtype (struct (struct_name "Cell") [arg_ty (ref (lt "a1") i32)]) (struct (struct_name "Cell") [arg_ty (ref (lt "b1") i32)]) O).
+% [main] ?- (subtype (struct (ident "Cell") [arg_ty (ref (lt "a1") i32)]) (struct (ident "Cell") [arg_ty (ref (lt "b1") i32)]) O).
 % 
 % The answer substitution:
 % O = relate_lt_oblig invariant (lt "a1") (lt "b1") :: nil
@@ -152,7 +168,7 @@ variance (struct_name "Cell") [invariant].
 % 
 % no (more) solutions
 % 
-% [main] ?- (subtype (struct (struct_name "Vec") [arg_ty (ref (lt "a1") i32)]) (struct (struct_name "Vec") [arg_ty (ref (lt "b1") i32)]) O).
+% [main] ?- (subtype (struct (ident "Vec") [arg_ty (ref (lt "a1") i32)]) (struct (ident "Vec") [arg_ty (ref (lt "b1") i32)]) O).
 % 
 % The answer substitution:
 % O = relate_lt_oblig covariant (lt "a1") (lt "b1") :: nil
@@ -161,8 +177,31 @@ variance (struct_name "Cell") [invariant].
 % 
 % no (more) solutions
 % 
-% [main] ?- (relate_ty invariant (struct (struct_name "Vec") [arg_ty (ref (lt "a1") i32)]) (struct (struct_name "Vec") [arg_ty (ref (lt "b1") i32)]) O).
+% [main] ?- (relate_ty invariant (struct (ident "Vec") [arg_ty (ref (lt "a1") i32)]) (struct (ident "Vec") [arg_ty (ref (lt "b1") i32)]) O).
 % 
 % The answer substitution:
 % O = relate_lt_oblig invariant (lt "a1") (lt "b1") :: nil
+
+% Traits %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Let us try more of a metadata approach to start.
+
+kind t_trait_ref type.
+type trait_ref t_ident -> (list t_arg) -> t_trait_ref.
+
+type trait_ref_matches t_trait_ref -> t_trait_ref -> (list t_obligation) -> o.
+trait_ref_matches (trait_ref N As) (trait_ref N Bs) O :- eq_args As Bs O.
+
+kind t_impl type.
+type impl t_trait_ref -> (list t_obligation) -> t_impl.
+type impl_forall (t_arg -> t_impl) -> t_impl.
+
+type impl_matches t_trait_ref -> t_impl -> O -> o.
+impl_matches A (impl B O1) O3 :-
+    !,
+    trait_ref_matches A B O2,
+    join O1 O2 O3.
+impl_matches A (impl_forall I) O :-
+    !,
+    sigma (Arg \ impl_matches A (I Arg) O).
 
