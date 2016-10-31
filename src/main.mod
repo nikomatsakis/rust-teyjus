@@ -57,21 +57,19 @@ type relate_lt_oblig t_variance -> t_lt -> t_lt -> t_obligation.
 % Relate kinds %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 type relate_arg t_variance -> t_arg -> t_arg -> (list t_obligation) -> o.
-relate_arg V (arg_ty A) (arg_ty B) O :- !, relate_ty V A B O.
-relate_arg V (arg_lt A) (arg_lt B) O :- !, relate_ty V (ref A i32) (ref B i32) O.
+relate_arg V (arg_ty A) (arg_ty B) O :- relate_ty V A B O.
+relate_arg V (arg_lt A) (arg_lt B) O :- relate_ty V (ref A i32) (ref B i32) O.
 
 type relate_args (list t_variance) -> (list t_arg) -> (list t_arg) -> (list t_obligation) -> o.
-relate_args nil nil nil nil :- !.
+relate_args nil nil nil nil.
 relate_args (V :: Vs) (A :: As) (B :: Bs) O3 :-
-    !,
     relate_arg V A B O1,
     relate_args Vs As Bs O2,
     join O1 O2 O3.
 
 type eq_args (list t_arg) -> (list t_arg) -> (list t_obligation) -> o.
-eq_args nil nil nil :- !.
+eq_args nil nil nil.
 eq_args (A :: As) (B :: Bs) O3 :-
-    !,
     relate_arg invariant A B O1,
     eq_args As Bs O2,
     join O1 O2 O3.
@@ -81,35 +79,28 @@ eq_args (A :: As) (B :: Bs) O3 :-
 % `relate_ty`: Relate two types by making them equal, subtype,
 % supertype, etc as needed.
 type relate_ty t_variance -> t_ty -> t_ty -> (list t_obligation) -> o.
-relate_ty V i32 i32 nil :- !.
-relate_ty V str str nil :- !.
+relate_ty V i32 i32 nil.
+relate_ty V str str nil.
 relate_ty V (array T1) (array T2) O :-
-    !,
     relate_ty V T1 T2 O.
 relate_ty V (ref La Ta) (ref Lb Tb) O2 :-
-    !,
     relate_ty V Ta Tb O1,
     set_add (relate_lt_oblig V La Lb) O1 O2.
 relate_ty V (ref_mut La Ta) (ref_mut Lb Tb) O2 :-
-    !,
     relate_ty invariant Ta Tb O1,
     set_add (relate_lt_oblig V La Lb) O1 O2.
 relate_ty V (fn Aa Va) (fn Ab Vb) O3 :-
-    !,
     invert_variance V Vcontra,
     relate_ty Vcontra Aa Ab O1,
     relate_ty V Va Vb O2,
     join O1 O2 O3.
 relate_ty V (tup2 Aa Va) (tup2 Ab Vb) O3 :-
-    !,
     relate_ty V Aa Ab O1,
     relate_ty V Va Vb O2,
     join O1 O2 O3.
 relate_ty V (forall A) B O :-
-    !,
     sigma L \ relate_ty V (A L) B O.
 relate_ty V A (forall B) O :-
-    !,
     pi L \ relate_ty V A (B L) O.
 
 type subtype t_ty -> t_ty -> (list t_obligation) -> o.
@@ -131,7 +122,6 @@ eqtype A B O :- relate_ty invariant A B O.
 %
 % ```
 % relate_ty V (vec A) (vec B) O :-
-%     !,
 %     relate_ty V A B O.
 % ```
 %
@@ -149,7 +139,6 @@ type struct t_ident -> (list t_arg) -> t_ty.
 type variance t_ident -> (list t_variance) -> o.
 
 relate_ty V0 (struct N As) (struct N Bs) O :-
-    !,
     variance N V1s,
     map (apply_variance V0) V1s V2s,
     relate_args V2s As Bs O.
@@ -198,10 +187,8 @@ type impl_forall (t_arg -> t_impl) -> t_impl.
 
 type impl_matches t_trait_ref -> t_impl -> O -> o.
 impl_matches A (impl B O1) O3 :-
-    !,
     trait_ref_matches A B O2,
     join O1 O2 O3.
 impl_matches A (impl_forall I) O :-
-    !,
     sigma (Arg \ impl_matches A (I Arg) O).
 
