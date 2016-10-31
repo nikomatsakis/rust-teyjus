@@ -58,7 +58,26 @@ type struct t_ident -> (list t_arg) -> t_ty.
 
 exportdef variance t_ident -> (list t_variance) -> o.
 
+% Where clauses %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+kind t_wc type.
+type t_wc_trait_project t_trait_ref -> t_item_name -> t_item_value.
+type t_wc_lt_outlives t_lt -> t_lt -> t_wc.
+type t_wc_ty_outlives t_ty -> t_lt -> t_wc.
+
+exportdef wc_holds t_wc -> (list t_lt_constraint) -> o.
+
+exportdef wcs_hold (list t_wc) -> (list t_lt_constraint) -> o.
+
 % Traits %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+kind t_item_name type.
+type item_name string -> t_item_name.
+
+kind t_item_value type.
+type item_value_ty t_ty -> t_item_value.
+type item_value_lt t_lt -> t_item_value.
+type item_value_unit t_item_value.
 
 kind t_trait_ref type.
 type trait_ref t_ident -> (list t_arg) -> t_trait_ref.
@@ -66,7 +85,7 @@ type trait_ref t_ident -> (list t_arg) -> t_trait_ref.
 exportdef trait_ref_matches t_trait_ref -> t_trait_ref -> (list t_lt_constraint) -> o.
 
 kind t_impl type.
-type impl t_trait_ref -> (list t_lt_constraint) -> t_impl.
+type impl t_trait_ref -> (list t_wc) -> t_impl.
 type impl_forall (t_arg -> t_impl) -> t_impl.
 
 exportdef impl_matches t_trait_ref -> t_impl -> O -> o.
