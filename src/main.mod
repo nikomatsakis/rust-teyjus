@@ -45,29 +45,29 @@ invert_variance covariant contravariant.
 invert_variance contravariant covariant.
 invert_variance invariant invariant.
 
-% Obligations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Outputs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% The output from the trait matching and type equating process is a
+% set of lifetime obligations.
 
-kind t_obligation type.
-
-% Relate the regions as would be required to make two references have
-% the appropriate type. That is, `(relate_lt_oblig covariant A B)` means `A:
-% B` in Rust terms, or `B <= A` in terms of the region lattice.
-type relate_lt_oblig t_variance -> t_lt -> t_lt -> t_obligation.
+kind t_lt_constraint type.
+type lt_constraint_outlives t_lt -> t_lt -> t_lt_constraint.
+type lt_constraint_equals t_lt -> t_lt -> t_lt_constraint.
 
 % Relate kinds %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-type relate_arg t_variance -> t_arg -> t_arg -> (list t_obligation) -> o.
+type relate_arg t_variance -> t_arg -> t_arg -> (list t_lt_constraint) -> o.
 relate_arg V (arg_ty A) (arg_ty B) O :- relate_ty V A B O.
 relate_arg V (arg_lt A) (arg_lt B) O :- relate_ty V (ref A i32) (ref B i32) O.
 
-type relate_args (list t_variance) -> (list t_arg) -> (list t_arg) -> (list t_obligation) -> o.
+type relate_args (list t_variance) -> (list t_arg) -> (list t_arg) -> (list t_lt_constraint) -> o.
 relate_args nil nil nil nil.
 relate_args (V :: Vs) (A :: As) (B :: Bs) O3 :-
     relate_arg V A B O1,
     relate_args Vs As Bs O2,
     join O1 O2 O3.
 
-type eq_args (list t_arg) -> (list t_arg) -> (list t_obligation) -> o.
+type eq_args (list t_arg) -> (list t_arg) -> (list t_lt_constraint) -> o.
 eq_args nil nil nil.
 eq_args (A :: As) (B :: Bs) O3 :-
     relate_arg invariant A B O1,
@@ -78,7 +78,7 @@ eq_args (A :: As) (B :: Bs) O3 :-
 
 % `relate_ty`: Relate two types by making them equal, subtype,
 % supertype, etc as needed.
-type relate_ty t_variance -> t_ty -> t_ty -> (list t_obligation) -> o.
+type relate_ty t_variance -> t_ty -> t_ty -> (list t_lt_constraint) -> o.
 relate_ty V i32 i32 nil.
 relate_ty V str str nil.
 relate_ty V (array T1) (array T2) O :-
@@ -103,10 +103,15 @@ relate_ty V (forall A) B O :-
 relate_ty V A (forall B) O :-
     pi L \ relate_ty V A (B L) O.
 
-type subtype t_ty -> t_ty -> (list t_obligation) -> o.
+type relate_lt t_variance -> t_lt -> t_lt -> (list t_lt_constraint) -> o.
+relate_lt covariant A B [lt_constraint_outlives A B].
+relate_lt contravariant A B [lt_constraint_outlives B A].
+relate_lt invariant A B [lt_constraint_equals A B].
+
+type subtype t_ty -> t_ty -> (list t_lt_constraint) -> o.
 subtype A B O :- relate_ty covariant A B O.
 
-type eqtype t_ty -> t_ty -> (list t_obligation) -> o.
+type eqtype t_ty -> t_ty -> (list t_lt_constraint) -> o.
 eqtype A B O :- relate_ty invariant A B O.
 
 % Structs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -178,17 +183,18 @@ variance (ident "Cell") [invariant].
 kind t_trait_ref type.
 type trait_ref t_ident -> (list t_arg) -> t_trait_ref.
 
-type trait_ref_matches t_trait_ref -> t_trait_ref -> (list t_obligation) -> o.
+type trait_ref_matches t_trait_ref -> t_trait_ref -> (list t_lt_constraint) -> o.
 trait_ref_matches (trait_ref N As) (trait_ref N Bs) O :- eq_args As Bs O.
 
 kind t_impl type.
-type impl t_trait_ref -> (list t_obligation) -> t_impl.
+type impl t_trait_ref -> (list t_lt_constraint) -> t_impl.
 type impl_forall (t_arg -> t_impl) -> t_impl.
 
-type impl_matches t_trait_ref -> t_impl -> O -> o.
-impl_matches A (impl B O1) O3 :-
-    trait_ref_matches A B O2,
-    join O1 O2 O3.
-impl_matches A (impl_forall I) O :-
-    sigma (Arg \ impl_matches A (I Arg) O).
+%type impl_matches t_trait_ref -> t_impl -> O -> o.
+%impl_matches A (impl B O1) O4 :-
+%    trait_ref_matches A B O2,
+%    obligations_hold O1 O3,
+%    join O3 O4.
+%impl_matches A (impl_forall I) O :-
+%    sigma (Arg \ impl_matches A (I Arg) O).
 

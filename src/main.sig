@@ -27,23 +27,23 @@ kind t_arg type.
 type arg_ty t_ty -> t_arg.
 type arg_lt t_lt -> t_arg.
 
-kind t_obligation type.
+kind t_lt_constraint type.
 
-type relate_lt_oblig t_variance -> t_lt -> t_lt -> t_obligation.
+type relate_lt_oblig t_variance -> t_lt -> t_lt -> t_lt_constraint.
 
-type relate_arg t_variance -> t_arg -> t_arg -> (list t_obligation) -> o.
+type relate_arg t_variance -> t_arg -> t_arg -> (list t_lt_constraint) -> o.
 exportdef relate_arg.
 
-type relate_args (list t_variance) -> (list t_arg) -> (list t_arg) -> (list t_obligation) -> o.
+type relate_args (list t_variance) -> (list t_arg) -> (list t_arg) -> (list t_lt_constraint) -> o.
 exportdef relate_args.
 
-type relate_ty t_variance -> t_ty -> t_ty -> (list t_obligation) -> o.
+type relate_ty t_variance -> t_ty -> t_ty -> (list t_lt_constraint) -> o.
 exportdef relate_ty.
 
-type subtype t_ty -> t_ty -> (list t_obligation) -> o.
+type subtype t_ty -> t_ty -> (list t_lt_constraint) -> o.
 exportdef subtype.
 
-type eqtype t_ty -> t_ty -> (list t_obligation) -> o.
+type eqtype t_ty -> t_ty -> (list t_lt_constraint) -> o.
 exportdef eqtype.
 
 % Structs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,10 +63,10 @@ exportdef variance t_ident -> (list t_variance) -> o.
 kind t_trait_ref type.
 type trait_ref t_ident -> (list t_arg) -> t_trait_ref.
 
-exportdef trait_ref_matches t_trait_ref -> t_trait_ref -> (list t_obligation) -> o.
+exportdef trait_ref_matches t_trait_ref -> t_trait_ref -> (list t_lt_constraint) -> o.
 
 kind t_impl type.
-type impl t_trait_ref -> (list t_obligation) -> t_impl.
+type impl t_trait_ref -> (list t_lt_constraint) -> t_impl.
 type impl_forall (t_arg -> t_impl) -> t_impl.
 
 exportdef impl_matches t_trait_ref -> t_impl -> O -> o.
