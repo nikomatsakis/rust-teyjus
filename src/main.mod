@@ -270,8 +270,11 @@ example1 O :-
                  O.
 
 % impl<T> Clone for Vec<T> where T: Clone
+% impl Clone for i32
+% Vec<i32>: Clone
 type example2 (list t_lt_constraint) -> o.
 example2 O :-
+         (declare_impl (impl (trait_ref (ident "Clone") [arg_ty i32]) [])) =>
          (declare_impl (impl_forall T \ impl (trait_ref (ident "Clone")
                                                         [arg_ty (struct (ident "Vec") [T])])
                                              [wc_trait_holds (trait_ref (ident "Clone") [T])])) =>
