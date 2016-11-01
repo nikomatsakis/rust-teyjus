@@ -28,6 +28,8 @@ type arg_ty t_ty -> t_arg.
 type arg_lt t_lt -> t_arg.
 
 kind t_lt_constraint type.
+type lt_constraint_outlives t_lt -> t_lt -> t_lt_constraint.
+type lt_constraint_equals t_lt -> t_lt -> t_lt_constraint.
 
 type relate_lt_oblig t_variance -> t_lt -> t_lt -> t_lt_constraint.
 
@@ -37,8 +39,11 @@ exportdef relate_arg.
 type relate_args (list t_variance) -> (list t_arg) -> (list t_arg) -> (list t_lt_constraint) -> o.
 exportdef relate_args.
 
-type relate_ty t_variance -> t_ty -> t_ty -> (list t_lt_constraint) -> o.
-exportdef relate_ty.
+exportdef relate_ty t_variance -> t_ty -> t_ty -> (list t_lt_constraint) -> o.
+
+exportdef relate_lt t_variance -> t_lt -> t_lt -> (list t_lt_constraint) -> o.
+
+exportdef relate_xxx t_lt -> t_lt -> (list string) -> o.
 
 type subtype t_ty -> t_ty -> (list t_lt_constraint) -> o.
 exportdef subtype.
@@ -89,3 +94,9 @@ type impl t_trait_ref -> (list t_wc) -> t_impl.
 type impl_forall (t_arg -> t_impl) -> t_impl.
 
 exportdef impl_matches t_trait_ref -> t_impl -> O -> o.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+exportdef example1 (list t_lt_constraint) -> o.
+exportdef example2 (list t_lt_constraint) -> o.
+exportdef example3 (list t_lt_constraint) -> o.

@@ -110,6 +110,8 @@ relate_lt covariant A B [lt_constraint_outlives A B].
 relate_lt contravariant A B [lt_constraint_outlives B A].
 relate_lt invariant A B [lt_constraint_equals A B].
 
+type baz string -> string.
+
 type subtype t_ty -> t_ty -> (list t_lt_constraint) -> o.
 subtype A B O :- relate_ty covariant A B O.
 
@@ -181,13 +183,17 @@ variance (ident "Cell") [invariant].
 % Where clauses %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 kind t_wc type.
-type t_wc_trait_project t_trait_ref -> t_item_name -> t_item_value.
-type t_wc_lt_outlives t_lt -> t_lt -> t_wc.
-type t_wc_ty_outlives t_ty -> t_lt -> t_wc.
+type wc_trait_holds t_trait_ref -> t_wc.
+type wc_trait_project t_trait_ref -> t_item_name -> t_item_value.
+type wc_lt_outlives t_lt -> t_lt -> t_wc.
+type wc_ty_outlives t_ty -> t_lt -> t_wc.
+type wc_for_lt (t_lt -> t_wc) -> t_wc.
 
 type wc_holds t_wc -> (list t_lt_constraint) -> o.
-wc_holds (t_wc_lt_outlives L1 L2) O :- lt_outlives L1 L2 O.
-wc_holds (t_wc_ty_outlives T A) O :- ty_outlives T A O.
+wc_holds (wc_lt_outlives L1 L2) O :- lt_outlives L1 L2 O.
+wc_holds (wc_ty_outlives T A) O :- ty_outlives T A O.
+wc_holds (wc_trait_holds T) O :- trait_holds T O.
+wc_holds (wc_for_lt L) O :- pi L0 \ wc_holds (L L0) O.
 
 type wcs_hold (list t_wc) -> (list t_lt_constraint) -> o.
 wcs_hold nil nil.
@@ -248,3 +254,31 @@ impl_matches A (impl B WC1) O3 :-
 impl_matches A (impl_forall I) O :-
     sigma (Arg \ impl_matches A (I Arg) O).
 
+type declare_impl t_impl -> o.
+
+% Trait holds %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+type trait_holds t_trait_ref -> (list t_lt_constraint) -> o.
+trait_holds TraitRef O :- declare_impl SomeImpl, impl_matches TraitRef SomeImpl O.
+
+% Examples
+
+type example1 (list t_lt_constraint) -> o.
+example1 O :-
+         subtype (struct (ident "Vec") [arg_ty (ref (lt "a1") i32)])
+                 (struct (ident "Vec") [arg_ty (ref (lt "a2") i32)])
+                 O.
+
+% impl<T> Clone for Vec<T> where T: Clone
+type example2 (list t_lt_constraint) -> o.
+example2 O :-
+         (declare_impl (impl_forall T \ impl (trait_ref (ident "Clone")
+                                                        [arg_ty (struct (ident "Vec") [T])])
+                                             [wc_trait_holds (trait_ref (ident "Clone") [T])])) =>
+         (trait_holds (trait_ref (ident "Clone") [arg_ty (struct (ident "Vec") [arg_ty i32])]) O).
+
+% impl<T> Clone for Vec<T> where T: Clone
+type example3 (list t_lt_constraint) -> o.
+example3 O :-
+         (declare_impl (impl (trait_ref (ident "Clone") [arg_ty i32]) [])) =>
+         (trait_holds (trait_ref (ident "Clone") [arg_ty i32]) O).
