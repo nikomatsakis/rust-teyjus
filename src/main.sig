@@ -98,5 +98,6 @@ exportdef impl_matches t_trait_ref -> t_impl -> O -> o.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 exportdef example1 (list t_lt_constraint) -> o.
+exportdef example1b (list t_lt_constraint) -> o.
 exportdef example2 (list t_lt_constraint) -> o.
 exportdef example3 (list t_lt_constraint) -> o.

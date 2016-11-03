@@ -10,6 +10,7 @@ module main.
 
 accumulate lists.
 accumulate sets.
+accumulate debug.
 
 % Base definitions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -100,10 +101,11 @@ relate_ty V (tup2 Aa Va) (tup2 Ab Vb) O3 :-
     relate_ty V Aa Ab O1,
     relate_ty V Va Vb O2,
     join O1 O2 O3.
-relate_ty V (forall A) B O :-
-    sigma L \ relate_ty V (A L) B O.
-relate_ty V A (forall B) O :-
-    pi L \ relate_ty V A (B L) O.
+
+% FIXME define for other variances
+relate_ty invariant (forall A) (forall B) O :-
+    pi La \ sigma Lb \ relate_ty V (A La) (B Lb) O,
+    sigma La \ pi Lb \ relate_ty V (A La) (B Lb) O.
 
 type relate_lt t_variance -> t_lt -> t_lt -> (list t_lt_constraint) -> o.
 relate_lt covariant A B [lt_constraint_outlives A B].
@@ -151,9 +153,6 @@ relate_ty V0 (struct N As) (struct N Bs) O :-
     variance N V1s,
     map (apply_variance V0) V1s V2s,
     relate_args V2s As Bs O.
-
-variance (ident "Vec") [covariant].
-variance (ident "Cell") [invariant].
 
 % Example interaction:
 %
@@ -247,6 +246,7 @@ type impl t_trait_ref -> (list t_wc) -> t_impl.
 type impl_forall (t_arg -> t_impl) -> t_impl.
 
 type impl_matches t_trait_ref -> t_impl -> O -> o.
+impl_matches A I O :- announce (impl_matches A I O).
 impl_matches A (impl B WC1) O3 :-
     trait_ref_matches A B O1,
     wcs_hold WC1 O2,
@@ -259,14 +259,23 @@ type declare_impl t_impl -> o.
 % Trait holds %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 type trait_holds t_trait_ref -> (list t_lt_constraint) -> o.
+trait_holds TraitRef O :- announce (trait_holds TraitRef O).
 trait_holds TraitRef O :- declare_impl SomeImpl, impl_matches TraitRef SomeImpl O.
 
 % Examples
 
 type example1 (list t_lt_constraint) -> o.
 example1 O :-
+         (variance (ident "Vec") [covariant]) =>
          subtype (struct (ident "Vec") [arg_ty (ref (lt "a1") i32)])
                  (struct (ident "Vec") [arg_ty (ref (lt "a2") i32)])
+                 O.
+
+type example1b (list t_lt_constraint) -> o.
+example1b O :-
+         (variance (ident "Cell") [invariant]) =>
+         subtype (struct (ident "Cell") [arg_ty (ref (lt "a1") i32)])
+                 (struct (ident "Cell") [arg_ty (ref (lt "a2") i32)])
                  O.
 
 % impl<T> Clone for Vec<T> where T: Clone
@@ -274,6 +283,7 @@ example1 O :-
 % Vec<i32>: Clone
 type example2 (list t_lt_constraint) -> o.
 example2 O :-
+         (variance (ident "Vec") [covariant]) =>
          (declare_impl (impl (trait_ref (ident "Clone") [arg_ty i32]) [])) =>
          (declare_impl (impl_forall T \ impl (trait_ref (ident "Clone")
                                                         [arg_ty (struct (ident "Vec") [T])])
