@@ -103,6 +103,12 @@ relate_ty V (tup2 Aa Va) (tup2 Ab Vb) O3 :-
     join O1 O2 O3.
 
 % FIXME define for other variances
+%
+% Have to be careful here tho or else it goes off on a wild goose
+% chase; e.g., `i32 <: ?T` can be solved by `?T = i32` but also `?T =
+% for<'a> i32` and so forth (the syntax of our types here isn't
+% restricting `for<'a> i32`, but even if we did the same problem would
+% presumably arise with `fn(i32)`.
 relate_ty invariant (forall A) (forall B) O :-
     pi La \ sigma Lb \ relate_ty V (A La) (B Lb) O,
     sigma La \ pi Lb \ relate_ty V (A La) (B Lb) O.
